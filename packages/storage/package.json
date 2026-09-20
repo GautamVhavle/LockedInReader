@@ -1,0 +1,27 @@
+{
+  "name": "@locked-in/storage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@locked-in/types": "workspace:*",
+    "idb": "^8.0.2"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.1",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}

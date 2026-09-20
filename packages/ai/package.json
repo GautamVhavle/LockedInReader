@@ -1,0 +1,24 @@
+{
+  "name": "@locked-in/ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "types": "./src/index.ts", "import": "./src/index.ts" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@locked-in/search": "workspace:*",
+    "@locked-in/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@locked-in/testing": "workspace:*",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}

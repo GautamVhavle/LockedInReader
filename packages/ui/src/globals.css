@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+@source "../../../apps/web/src/**/*.{ts,tsx}";
+@source "../../../apps/extension/src/**/*.{ts,tsx}";
+@source "../../../apps/docs/src/**/*.{ts,tsx}";
+@source "./**/*.{ts,tsx}";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant sepia (&:where(.sepia, .sepia *));
+@custom-variant night (&:where(.night, .night *));
+
+/* Chassis (oxidized steel) + paper plane. Copper is the only warm accent. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4", "Newsreader", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-background: #101614;
+  --color-foreground: #e4dfd0;
+  --color-card: #161d1a;
+  --color-card-foreground: #e4dfd0;
+  --color-popover: #161d1a;
+  --color-popover-foreground: #e4dfd0;
+  --color-primary: #c45c26;
+  --color-primary-foreground: #f6efe4;
+  --color-secondary: #1c2420;
+  --color-secondary-foreground: #e4dfd0;
+  --color-muted: #1c2420;
+  --color-muted-foreground: #8b8778;
+  --color-accent: #c45c26;
+  --color-accent-foreground: #f6efe4;
+  --color-destructive: #c44a32;
+  --color-border: #2a3330;
+  --color-input: #2a3330;
+  --color-ring: #c45c26;
+  --color-reader-background: #e4dfd0;
+  --color-reader-text: #17150f;
+  --color-reader-focus: #c45c26;
+  --color-reader-highlight: #e7c07a;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.4rem;
+  --radius-xl: 0.6rem;
+}
+
+.light {
+  --color-background: #ece7d8;
+  --color-foreground: #17150f;
+  --color-card: #f3efe4;
+  --color-card-foreground: #17150f;
+  --color-popover: #f3efe4;
+  --color-popover-foreground: #17150f;
+  --color-primary: #9a4318;
+  --color-primary-foreground: #f6efe4;
+  --color-secondary: #ddd6c4;
+  --color-secondary-foreground: #17150f;
+  --color-muted: #ddd6c4;
+  --color-muted-foreground: #5c584c;
+  --color-accent: #c45c26;
+  --color-border: #cfc6b2;
+  --color-input: #cfc6b2;
+  --color-reader-background: #f3efe4;
+  --color-reader-text: #17150f;
+}
+
+.sepia {
+  --color-background: #2a2218;
+  --color-foreground: #e8d7b8;
+  --color-card: #32281c;
+  --color-primary: #c47a3a;
+  --color-muted: #32281c;
+  --color-muted-foreground: #a89474;
+  --color-border: #4a3c2a;
+  --color-reader-background: #f0e2c4;
+  --color-reader-text: #2a1c10;
+  --color-reader-focus: #c45c26;
+}
+
+.night {
+  --color-background: #07090c;
+  --color-foreground: #b8c4c0;
+  --color-card: #0d1114;
+  --color-primary: #7aa8a0;
+  --color-muted-foreground: #6d7a76;
+  --color-border: #1a2220;
+  --color-reader-background: #0b0e11;
+  --color-reader-text: #c5d0cc;
+  --color-reader-focus: #7aa8a0;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  }
+}
+
+.reader-surface {
+  background: var(--color-reader-background);
+  color: var(--color-reader-text);
+}
+
+.orp-letter {
+  color: var(--color-reader-focus);
+  font-weight: 600;
+}
+
+.aperture {
+  position: relative;
+}
+
+.aperture::before {
+  content: "";
+  position: absolute;
+  top: -18%;
+  bottom: -18%;
+  left: 50%;
+  width: 1px;
+  background: var(--color-reader-focus);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.filament {
+  height: 1px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.filament > span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.rail-link {
+  color: var(--color-muted-foreground);
+}
+
+.rail-link[aria-current="page"] {
+  color: var(--color-foreground);
+}
+
+.rail-link[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  background: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
