@@ -46,6 +46,51 @@ describe('parseEpub', () => {
     expect(document.source.kind).toBe('epub');
   });
 
+  it('skips nav, styles, and tags', async () => {
+    const zip = new JSZip();
+    zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+    zip.file(
+      'META-INF/container.xml',
+      '<container><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>',
+    );
+    zip.file(
+      'OEBPS/content.opf',
+      `<package><metadata><dc:title>Tagged</dc:title></metadata>
+      <manifest>
+        <item id="c1" href="c1.xhtml" media-type="application/xhtml+xml"/>
+        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+      </manifest>
+      <spine><itemref idref="nav"/><itemref idref="c1"/></spine></package>`,
+    );
+    zip.file(
+      'OEBPS/nav.xhtml',
+      '<html><body><nav><a href="c1.xhtml">Contents junk</a></nav></body></html>',
+    );
+    zip.file(
+      'OEBPS/c1.xhtml',
+      `<html><head><style>p{color:red}</style></head><body>
+        <svg><text>icon</text></svg>
+        <h1>The <em>margin</em></h1>
+        <p>Hello <span>world</span>.<br/>Stay.</p>
+        <p>12</p>
+        <p>&lt;div&gt;not markup&lt;/div&gt;</p>
+      </body></html>`,
+    );
+    const document = await parseEpub({
+      bytes: await zip.generateAsync({ type: 'uint8array' }),
+      filename: 'tagged.epub',
+    });
+    const blob = document.blocks.map((block) => block.text).join('\n');
+    expect(blob).toContain('The margin');
+    expect(blob).toContain('Hello world. Stay.');
+    expect(blob).toContain('not markup');
+    expect(blob).not.toContain('Contents junk');
+    expect(blob).not.toContain('icon');
+    expect(blob).not.toContain('color:red');
+    expect(blob).not.toMatch(/[<>]/);
+    expect(document.blocks.some((block) => block.text.trim() === '12')).toBe(false);
+  });
+
   it('refuses encrypted books', async () => {
     const zip = new JSZip();
     zip.file('META-INF/container.xml', '<container><rootfiles><rootfile full-path="x.opf"/></rootfiles></container>');

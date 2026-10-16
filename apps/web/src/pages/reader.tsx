@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createHighlight, createNote } from '@locked-in/annotation';
-import { progressPercent } from '@locked-in/core';
+import { progressPercent, isBoilerplate } from '@locked-in/core';
 import { saveProgress } from '@locked-in/library';
-import { BrowserTTSProvider } from '@locked-in/audio-engine';
+import { BrowserTTSProvider, speechParts } from '@locked-in/audio-engine';
 import type { CanonicalDocument, Highlight } from '@locked-in/types';
 import { useLibrary } from '../lib/library-state.js';
 import { workspace } from '../lib/platform.js';
@@ -166,14 +166,18 @@ export function ReaderPage() {
       setListening(false);
       return;
     }
+    const parts = speechParts(body);
+    if (parts.length === 0) return;
     setListening(true);
     try {
-      const parts = body.filter((block) => block.text.trim() && block.type !== 'code');
-      for (const block of parts) {
-        await tts.speak({ text: block.text, rate: settings.ttsRate });
+      await tts.start();
+      for (const text of parts) {
+        await tts.speak({ text, rate: settings.ttsRate });
       }
-    } catch {
-      /* stop() rejects in-flight speech */
+    } catch (caught) {
+      if (caught instanceof Error && caught.message === 'Speech failed') {
+        toast.error('This browser could not speak the page');
+      }
     } finally {
       setListening(false);
     }
@@ -249,6 +253,7 @@ export function ReaderPage() {
         </h1>
         <div className="mt-10 font-serif text-[1.05em]">
           {body.map((block) => {
+            if (block.type !== 'divider' && block.type !== 'code' && isBoilerplate(block.text)) return null;
             const marks = related.filter((item) => item.location.blockId === block.id);
             if (block.type === 'heading') {
               const Heading = (block.level && block.level <= 2 ? 'h2' : 'h3') as 'h2' | 'h3';

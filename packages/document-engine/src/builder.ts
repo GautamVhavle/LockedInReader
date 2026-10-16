@@ -1,4 +1,4 @@
-import { countCharacters, countWords, sanitizeHref } from '@locked-in/core';
+import { countCharacters, countWords, isBoilerplate, readableText, sanitizeHref } from '@locked-in/core';
 import {
   CanonicalDocumentSchema,
   createBlockId,
@@ -22,6 +22,12 @@ export interface DraftBlock {
   listStyle?: 'ordered' | 'unordered';
 }
 
+export function presentText(type: BlockType, text: string): string {
+  if (type === 'divider') return '';
+  if (type === 'code' && !/<\/?[a-z][^>]*>/i.test(text)) return text;
+  return readableText(text);
+}
+
 export function buildDocument(input: {
   source: DocumentSource;
   title?: string;
@@ -31,17 +37,23 @@ export function buildDocument(input: {
 }): CanonicalDocument {
   const id = createDocumentId();
   const now = nowIso();
-  const blocks: DocumentBlock[] = input.blocks.map((block, order) => ({
-    id: createBlockId(),
-    type: block.type,
-    text: block.text ?? '',
-    order,
-    level: block.level,
-    language: block.language,
-    href: sanitizeHref(block.href),
-    alt: block.alt,
-    listStyle: block.listStyle,
-  }));
+  const blocks: DocumentBlock[] = [];
+  for (const block of input.blocks) {
+    const text = presentText(block.type, block.text ?? '');
+    if (block.type !== 'divider' && block.type !== 'code' && isBoilerplate(text)) continue;
+    if (block.type !== 'divider' && !text.trim()) continue;
+    blocks.push({
+      id: createBlockId(),
+      type: block.type,
+      text,
+      order: blocks.length,
+      level: block.level,
+      language: block.language,
+      href: sanitizeHref(block.href),
+      alt: block.alt ? readableText(block.alt) : block.alt,
+      listStyle: block.listStyle,
+    });
+  }
 
   const toc: TocEntry[] = blocks
     .filter((block) => block.type === 'heading')
@@ -54,7 +66,7 @@ export function buildDocument(input: {
 
   const plain = blocks.map((block) => block.text).join(' ');
   const title =
-    input.title?.trim() ||
+    readableText(input.title ?? '') ||
     blocks.find((block) => block.type === 'heading' && block.level === 1)?.text ||
     blocks.find((block) => block.text.trim())?.text.slice(0, 80) ||
     'Untitled';
@@ -80,4 +92,34 @@ export function buildDocument(input: {
     createdAt: now,
     updatedAt: now,
   });
+}
+
+/** shortcut: marks saved against the old tagged text can land on the wrong span until they are made again */
+export function cleanDocument(document: CanonicalDocument): CanonicalDocument {
+  const blocks = document.blocks.map((block) => {
+    const text = presentText(block.type, block.text);
+    const hide = block.type !== 'divider' && block.type !== 'code' && isBoilerplate(text);
+    return {
+      ...block,
+      text: hide ? '' : text,
+      alt: block.alt ? readableText(block.alt) : block.alt,
+    };
+  });
+  const plain = blocks.map((block) => block.text).join(' ');
+  return {
+    ...document,
+    metadata: {
+      ...document.metadata,
+      title: readableText(document.metadata.title) || document.metadata.title,
+      wordCount: countWords(plain),
+      characterCount: countCharacters(plain),
+    },
+    structure: {
+      ...document.structure,
+      toc: document.structure.toc
+        .map((entry) => ({ ...entry, title: readableText(entry.title) }))
+        .filter((entry) => entry.title.trim()),
+    },
+    blocks,
+  };
 }

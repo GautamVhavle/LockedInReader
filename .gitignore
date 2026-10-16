@@ -19,9 +19,12 @@ apps/web/dev-dist
 test-results
 playwright-report
 .idea
-.vscode/*
-!.vscode/extensions.json
+.vscode/
+.github/
+.grok/
+docs/
+LOCKED_IN_IMPLEMENTATION_PLAN.md
+Vision.md
 *.crx
 *.zip
-.grok/tmp
 scratch

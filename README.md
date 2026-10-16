@@ -1,30 +1,18 @@
 # Locked In Reader
 
-**Read faster. Listen anywhere. Remember everything. Own your knowledge.**
+Read faster. Stay with the sentence.
 
-Open-source, local-first reading OS: capture articles and documents, read or speed-read them, highlight, listen, search, and ask your own library. An account is only for optional sync and hosted AI.
+Local-first reader for Markdown, text, HTML, EPUB, and PDF. The library stays in this browser. There is no account.
 
-## Quick start
+The app is at [lockedinreader.vercel.app](https://lockedinreader.vercel.app).
+
+## Develop
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-- PWA: http://localhost:5173
-- Extension: load `apps/extension/dist` unpacked after `pnpm --filter @locked-in/extension build`
-- Docs: `pnpm --filter @locked-in/docs dev`
+Open http://localhost:5173. To load the Chrome extension, run `pnpm --filter @locked-in/extension build` and choose `apps/extension/dist` as an unpacked extension.
 
-## What works offline
-
-Import Markdown, TXT, HTML, EPUB, and PDF. Read in a typographic reader. Speed-read with RSVP / ORP / chunk / guided modes. Highlight, note, bookmark, and resume. Search the local library. Speak with browser TTS.
-
-## Optional cloud
-
-- SpaceXAI for grounded document Q&A (`XAI_API_KEY`)
-- Ollama for local models
-- `services/api` + Docker Compose for self-hosted sync
-
-## Workspace
-
-See `LOCKED_IN_IMPLEMENTATION_PLAN.md`, `Vision.md`, and `docs/architecture/ARCHITECTURE.md`.
+Open a document and choose Listen. The browser speaks the words on the page.

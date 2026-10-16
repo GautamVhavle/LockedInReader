@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { cleanDocument } from '@locked-in/document-engine';
 import { themeClass } from '@locked-in/themes';
 import type { AppSettings, CanonicalDocument, Highlight, Note, ReadingProgress } from '@locked-in/types';
 import { DEFAULT_SETTINGS } from '@locked-in/types';
@@ -48,7 +49,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         workspace.progress.list(),
         workspace.settings.get(),
       ]);
-      setDocuments(seeded.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+      setDocuments(seeded.map(cleanDocument).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
       setHighlights(marks);
       setNotes(storedNotes);
       setProgress(storedProgress);

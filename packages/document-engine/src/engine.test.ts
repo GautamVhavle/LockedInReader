@@ -32,6 +32,18 @@ describe('DocumentEngine', () => {
     expect(html.blocks.some((block) => block.text.includes('navigation'))).toBe(false);
   });
 
+  it('reads words, not markdown markers or html tags', async () => {
+    const document = await defaultDocumentEngine.ingest({
+      filename: 'tags.md',
+      text: '# Title\n\nHello **there** and <em>you</em>.\n\n<p>Hi <b>friend</b></p>\n\n<script>alert(1)</script>\n',
+    });
+    const blob = document.blocks.map((block) => block.text).join('\n');
+    expect(blob).toContain('Hello there and you.');
+    expect(blob).toContain('Hi friend');
+    expect(blob).not.toContain('alert');
+    expect(blob).not.toMatch(/[<>*]/);
+  });
+
   it('strips javascript urls from html', async () => {
     const document = await defaultDocumentEngine.ingest({
       text: `<article><p>Hello</p><img src="javascript:alert(1)" alt="x"></article>`,

@@ -89,20 +89,64 @@ export function narrationText(document: CanonicalDocument): string {
   return documentPlainText(document.blocks);
 }
 
+const SKIPPED_SPEECH = new Set(['code', 'image', 'divider']);
+
+export function narrationChunks(parts: string[], limit = 1400): string[] {
+  const chunks: string[] = [];
+  let current = '';
+  for (const part of parts) {
+    const piece = part.trim();
+    if (!piece) continue;
+    if (current && current.length + piece.length + 1 > limit) {
+      chunks.push(current);
+      current = piece;
+    } else {
+      current = current ? `${current}\n${piece}` : piece;
+    }
+    if (current.length >= limit) {
+      chunks.push(current);
+      current = '';
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+export function speechParts(blocks: Array<{ type: string; text: string }>): string[] {
+  return narrationChunks(
+    blocks
+      .filter((block) => !SKIPPED_SPEECH.has(block.type) && block.text.trim())
+      .map((block) => block.text.trim()),
+  );
+}
+
 export class BrowserTTSProvider implements TTSProvider {
   readonly kind = 'browser-tts' as const;
   private utterance: SpeechSynthesisUtterance | undefined;
+  private halted = false;
+
+  /** Clear a previous stop. Waits after cancel so the next phrase is not dropped. */
+  async start(): Promise<void> {
+    this.halted = false;
+    if (typeof speechSynthesis === 'undefined') return;
+    if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+  }
 
   async speak(utterance: TTSUtterance): Promise<void> {
+    if (this.halted) throw new Error('stopped');
     if (typeof speechSynthesis === 'undefined') {
       throw new Error('Browser TTS is not available in this environment');
     }
-    speechSynthesis.cancel();
     await new Promise<void>((resolve, reject) => {
+      if (this.halted) {
+        reject(new Error('stopped'));
+        return;
+      }
       this.utterance = new SpeechSynthesisUtterance(utterance.text);
       this.utterance.rate = utterance.rate;
       this.utterance.onend = () => resolve();
-      this.utterance.onerror = () => reject(new Error('Speech was interrupted'));
+      this.utterance.onerror = () => reject(new Error(this.halted ? 'stopped' : 'Speech failed'));
       speechSynthesis.speak(this.utterance);
     });
   }
@@ -116,6 +160,7 @@ export class BrowserTTSProvider implements TTSProvider {
   }
 
   async stop(): Promise<void> {
+    this.halted = true;
     if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
   }
 }

@@ -4,7 +4,22 @@ import { sanitizeHref } from '@locked-in/core';
 import { buildDocument, type DraftBlock } from './builder.js';
 import type { ParseInput } from './types.js';
 
-const DROP_TAGS = new Set(['script', 'style', 'nav', 'footer', 'aside', 'form', 'iframe', 'noscript']);
+const DROP_TAGS = new Set([
+  'script',
+  'style',
+  'nav',
+  'footer',
+  'aside',
+  'form',
+  'iframe',
+  'noscript',
+  'svg',
+  'math',
+  'canvas',
+  'template',
+  'button',
+  'head',
+]);
 
 function walk(node: ReturnType<typeof parseHtmlTree>, blocks: DraftBlock[]): void {
   if (node.nodeType === 3) {
@@ -38,11 +53,6 @@ function walk(node: ReturnType<typeof parseHtmlTree>, blocks: DraftBlock[]): voi
     return;
   }
   if (tag === 'ul' || tag === 'ol') {
-    blocks.push({
-      type: 'list',
-      text: node.text.replace(/\s+/g, ' ').trim(),
-      listStyle: tag === 'ol' ? 'ordered' : 'unordered',
-    });
     for (const child of node.childNodes) {
       walk(child as typeof node, blocks);
     }

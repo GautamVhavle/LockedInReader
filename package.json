@@ -13,7 +13,6 @@
     "dev": "turbo dev --filter=@locked-in/web --filter=@locked-in/extension",
     "dev:web": "pnpm --filter @locked-in/web dev",
     "dev:extension": "pnpm --filter @locked-in/extension dev",
-    "dev:docs": "pnpm --filter @locked-in/docs dev",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",

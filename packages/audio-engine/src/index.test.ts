@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sampleDocument } from '@locked-in/testing';
-import { AudioTimeline, createAudioDocument } from './index.js';
+import { AudioTimeline, createAudioDocument, speechParts } from './index.js';
 
 describe('audio engine', () => {
   it('segments a document and seeks the timeline', () => {
@@ -11,5 +11,15 @@ describe('audio engine', () => {
     expect(timeline.current?.order).toBe(0);
     timeline.next();
     expect(timeline.current?.order).toBe(1);
+  });
+
+  it('speaks prose and skips code', () => {
+    expect(
+      speechParts([
+        { type: 'paragraph', text: 'One.' },
+        { type: 'code', text: '<p>const x = 1</p>' },
+        { type: 'paragraph', text: 'Two.' },
+      ]),
+    ).toEqual(['One.\nTwo.']);
   });
 });
