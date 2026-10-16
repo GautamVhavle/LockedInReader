@@ -18,6 +18,7 @@ export const AppSettingsSchema = z.object({
   theme: ProductThemeSchema.default('dark'),
   fontFamily: FontFamilySchema.default('serif'),
   fontSizePx: z.number().min(12).max(48).default(20),
+  // shortcut: speeds outside 80–1200 stay stored until the slider moves; a tighter schema would reset every setting
   wpm: z.number().int().min(50).max(2000).default(350),
   chunkSize: z.number().int().min(1).max(12).default(1),
   orpEnabled: z.boolean().default(true),

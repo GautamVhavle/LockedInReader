@@ -6,7 +6,7 @@ Locked In is built around a simpler bet: if the sentence is held still, the rest
 
 You can import a file, save a webpage, or start from this essay. The same document can be read as a page, flashed one word at a time, or spoken aloud. Highlights attach to the document itself — a block and an offset — not to whatever the browser happened to draw today.
 
-Speed reading here is not a gimmick. RSVP and ORP exist because the eye already knows where to land in a word. The copper line you will see in the speed reader is that landing mark. It does not move. The word moves around it.
+Speed reading here is not a gimmick. RSVP and ORP exist because the eye already knows where to land in a word. The copper letter in the speed reader is that landing mark. It does not move. The word moves around it.
 
 Nothing in this file has left your machine. There is no account required to finish it. If you want cloud later, that is a choice you make after the reading is already yours.
 

@@ -6,8 +6,12 @@ export function NotesPage() {
   const title = (id?: string) => documents.find((doc) => doc.id === id)?.metadata.title ?? 'Untitled';
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
-      <h1 className="font-serif text-4xl tracking-tight">Marks</h1>
+    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10">
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Recall</p>
+      <h1 className="mt-2 font-serif text-4xl tracking-tight">Marks</h1>
+      <p className="mt-3 max-w-lg text-sm text-muted-foreground">
+        Sentences you kept. Open one to return to that page.
+      </p>
       <section className="mt-10">
         {highlights.length === 0 && notes.length === 0 ? (
           <p className="text-sm text-muted-foreground">Select a sentence on a page and choose Mark.</p>

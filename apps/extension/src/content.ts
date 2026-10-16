@@ -1,22 +1,18 @@
-export interface PageCapture {
-  url: string;
-  title: string;
-  html: string;
-  selection: string;
-}
+import { chosenSelection, pageFromMessage, type PageCapture } from './capture.js';
+
+export type { PageCapture };
 
 function capture(selection?: string): PageCapture {
   return {
     url: location.href,
     title: document.title,
     html: document.documentElement.outerHTML,
-    selection: selection ?? window.getSelection()?.toString() ?? '',
+    selection: chosenSelection(selection, window.getSelection()?.toString() ?? ''),
   };
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === 'LOCKED_IN_CAPTURE' || message?.type === 'LOCKED_IN_GET_PAGE') {
-    sendResponse(capture(message.selection));
-  }
-  return true;
+  const page = pageFromMessage(message, capture);
+  if (!page) return;
+  sendResponse(page);
 });

@@ -1,6 +1,7 @@
 import { DocumentEngine } from '@locked-in/document-engine';
 import { epubParser } from '@locked-in/epub';
 import { webParser } from '@locked-in/extraction';
+import { saveProgress } from '@locked-in/library';
 import { pdfParser } from '@locked-in/pdf';
 import {
   IndexedDbStorageAdapter,
@@ -10,7 +11,20 @@ import {
   type StoreName,
 } from '@locked-in/storage';
 import type { CanonicalDocument } from '@locked-in/types';
+import quietUrl from '../samples/quiet-margin.epub?url';
+import { seedMissing, shareInFlight } from './shelf.js';
 import welcome from './welcome.md?raw';
+
+const articleHtml = `<!doctype html><html><head><title>How a page becomes a document</title></head><body><article><h1>How a page becomes a document</h1><p>A webpage is a performance. A document is what remains when the performance ends: the title, the paragraphs, and the place you stopped.</p><p>The chrome, the recommended next thing, and the unread badge stay outside. What you keep is the sentence.</p><h2>What the extension keeps</h2><p>Open a page, then read it here. The capture is the article, not a screenshot of the site around it.</p></article></body></html>`;
+
+const checklist = `Pocket checklist
+
+Open one document.
+Read until a sentence is worth keeping.
+Mark it.
+Leave.
+Continue tomorrow from the same word.
+`;
 
 export function createDocumentPlatform(): DocumentEngine {
   const engine = new DocumentEngine();
@@ -66,11 +80,16 @@ const switching = new SwitchingAdapter();
 export const workspace = new LocalWorkspace(switching);
 export const storageReady = switching.connect();
 
-export async function ingestText(text: string, filename: string): Promise<CanonicalDocument> {
+export async function ingestText(
+  text: string,
+  filename: string,
+  title?: string,
+): Promise<CanonicalDocument> {
   await storageReady;
   const document = await documentPlatform.ingest({
     text,
     filename,
+    title,
   });
   await workspace.documents.save(document);
   return document;
@@ -93,7 +112,9 @@ export async function ingestFile(file: File): Promise<CanonicalDocument> {
   return document;
 }
 
-export async function ingestFiles(files: FileList | File[]): Promise<CanonicalDocument | undefined> {
+export async function ingestFiles(
+  files: FileList | File[],
+): Promise<CanonicalDocument | undefined> {
   let last: CanonicalDocument | undefined;
   for (const file of files) {
     last = await ingestFile(file);
@@ -101,13 +122,59 @@ export async function ingestFiles(files: FileList | File[]): Promise<CanonicalDo
   return last;
 }
 
-export async function seedWelcomeIfNeeded(existingCount: number): Promise<boolean> {
-  if (existingCount > 0) return false;
+const shelfSlot: { current?: Promise<boolean> } = {};
+
+export function seedShelfIfNeeded(existing: CanonicalDocument[]): Promise<boolean> {
+  if (typeof localStorage === 'undefined') return Promise.resolve(false);
+  if (localStorage.getItem('locked-in:shelf-v2') === '1') return Promise.resolve(false);
+  return shareInFlight(shelfSlot, () => seedShelf(existing));
+}
+
+async function seedShelf(existing: CanonicalDocument[]): Promise<boolean> {
   if (typeof localStorage === 'undefined') return false;
-  if (localStorage.getItem('locked-in:seeded') === '1') return false;
-  await ingestText(welcome, 'on-keeping-a-sentence.md');
-  localStorage.setItem('locked-in:seeded', '1');
-  return true;
+  return seedMissing(
+    existing.map((document) => document.source.filename),
+    localStorage.getItem('locked-in:shelf-v2') === '1',
+    ingestSample,
+    () => {
+      localStorage.setItem('locked-in:shelf-v2', '1');
+      localStorage.setItem('locked-in:seeded', '1');
+    },
+  );
+}
+
+async function ingestSample(filename: string): Promise<void> {
+  switch (filename) {
+    case 'on-keeping-a-sentence.md': {
+      const essay = await ingestText(welcome, filename);
+      const block = essay.blocks.find((item) => item.text);
+      if (block) {
+        await saveProgress(
+          workspace,
+          essay.id,
+          { documentId: essay.id, blockId: block.id, offset: 0, wordIndex: 24 },
+          12,
+          'orp',
+        );
+      }
+      return;
+    }
+    case 'how-a-page-becomes-a-document.html':
+      await ingestText(articleHtml, filename);
+      return;
+    case 'pocket-checklist.txt':
+      await ingestText(checklist, filename, 'Pocket checklist');
+      return;
+    case 'the-quiet-margin.epub': {
+      const response = await fetch(quietUrl);
+      if (!response.ok) throw new Error('Sample book did not load');
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      await ingestFile(new File([bytes], filename, { type: 'application/epub+zip' }));
+      return;
+    }
+    default:
+      throw new Error(`Unknown sample ${filename}`);
+  }
 }
 
 export async function removeDocument(id: string): Promise<void> {

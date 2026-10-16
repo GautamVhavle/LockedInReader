@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { themeClass } from '@locked-in/themes';
 import type { AIProviderId, ProductTheme } from '@locked-in/types';
+import { clampWpm, WPM_MAX, WPM_MIN } from '@locked-in/reader-engine';
 import { Label, Slider, Switch, ThemeSwitcher } from '@locked-in/ui';
 import { useLibrary } from '../lib/library-state.js';
 import { workspace } from '../lib/platform.js';
@@ -38,13 +39,13 @@ export function SettingsPage() {
         <ThemeSwitcher value={settings.theme} onChange={(theme) => void update('theme', theme)} />
       </section>
       <section className="mt-8 flex flex-col gap-3">
-        <Label>Default speed ({settings.wpm} WPM)</Label>
+        <Label>Default speed ({clampWpm(settings.wpm)} WPM)</Label>
         <Slider
-          value={[settings.wpm]}
-          min={120}
-          max={900}
+          value={[clampWpm(settings.wpm)]}
+          min={WPM_MIN}
+          max={WPM_MAX}
           step={10}
-          onValueChange={([value]) => value && void update('wpm', value)}
+          onValueChange={([value]) => value && void update('wpm', clampWpm(value))}
           aria-label="Default WPM"
         />
       </section>

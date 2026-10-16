@@ -12,7 +12,7 @@ function Popup() {
           void chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT });
         }}
       >
-        Open side panel
+        Read this page
       </Button>
     </div>
   );

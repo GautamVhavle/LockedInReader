@@ -10,7 +10,8 @@ import {
 import { themeClass } from '@locked-in/themes';
 import type { AppSettings, CanonicalDocument, Highlight, Note, ReadingProgress } from '@locked-in/types';
 import { DEFAULT_SETTINGS } from '@locked-in/types';
-import { seedWelcomeIfNeeded, storageReady, workspace } from './platform.js';
+import { seedShelfIfNeeded, storageReady, workspace } from './platform.js';
+import { listAfterSeed } from './shelf.js';
 
 interface LibraryState {
   documents: CanonicalDocument[];
@@ -37,32 +38,17 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       await storageReady;
-      const docs = await workspace.documents.list();
-      if (await seedWelcomeIfNeeded(docs.length)) {
-        const seeded = await workspace.documents.list();
-        const [marks, storedNotes, storedProgress, storedSettings] = await Promise.all([
-          workspace.annotations.listHighlights(),
-          workspace.annotations.listNotes(),
-          workspace.progress.list(),
-          workspace.settings.get(),
-        ]);
-        setDocuments(seeded.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
-        setHighlights(marks);
-        setNotes(storedNotes);
-        setProgress(storedProgress);
-        setSettings(storedSettings);
-        document.documentElement.className = themeClass(storedSettings.theme);
-        setError(undefined);
-        setReady(true);
-        return;
-      }
+      const seeded = await listAfterSeed(
+        () => workspace.documents.list(),
+        (docs) => seedShelfIfNeeded(docs),
+      );
       const [marks, storedNotes, storedProgress, storedSettings] = await Promise.all([
         workspace.annotations.listHighlights(),
         workspace.annotations.listNotes(),
         workspace.progress.list(),
         workspace.settings.get(),
       ]);
-      setDocuments(docs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+      setDocuments(seeded.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
       setHighlights(marks);
       setNotes(storedNotes);
       setProgress(storedProgress);

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @source "../../../apps/web/src/**/*.{ts,tsx}";
 @source "../../../apps/extension/src/**/*.{ts,tsx}";
@@ -11,30 +11,30 @@
 
 /* Chassis (oxidized steel) + paper plane. Copper is the only warm accent. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Source Serif 4", "Newsreader", ui-serif, Georgia, serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', 'Newsreader', ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --color-background: #101614;
-  --color-foreground: #e4dfd0;
-  --color-card: #161d1a;
-  --color-card-foreground: #e4dfd0;
-  --color-popover: #161d1a;
-  --color-popover-foreground: #e4dfd0;
+  --color-background: #000000;
+  --color-foreground: #efeae0;
+  --color-card: #121413;
+  --color-card-foreground: #efeae0;
+  --color-popover: #121413;
+  --color-popover-foreground: #efeae0;
   --color-primary: #c45c26;
   --color-primary-foreground: #f6efe4;
-  --color-secondary: #1c2420;
-  --color-secondary-foreground: #e4dfd0;
-  --color-muted: #1c2420;
-  --color-muted-foreground: #8b8778;
+  --color-secondary: #1a1c1b;
+  --color-secondary-foreground: #efeae0;
+  --color-muted: #1a1c1b;
+  --color-muted-foreground: #a39e92;
   --color-accent: #c45c26;
   --color-accent-foreground: #f6efe4;
   --color-destructive: #c44a32;
-  --color-border: #2a3330;
-  --color-input: #2a3330;
+  --color-border: #2c2f2d;
+  --color-input: #2c2f2d;
   --color-ring: #c45c26;
-  --color-reader-background: #e4dfd0;
-  --color-reader-text: #17150f;
+  --color-reader-background: #000000;
+  --color-reader-text: #efeae0;
   --color-reader-focus: #c45c26;
   --color-reader-highlight: #e7c07a;
   --radius-sm: 0.125rem;
@@ -114,34 +114,102 @@
   }
 }
 
+/* Paper plane: shadcn tokens follow the reader, not the steel chassis. */
 .reader-surface {
   background: var(--color-reader-background);
   color: var(--color-reader-text);
+  --color-background: var(--color-reader-background);
+  --color-foreground: var(--color-reader-text);
+  --color-card: color-mix(in srgb, var(--color-reader-text) 7%, var(--color-reader-background));
+  --color-card-foreground: var(--color-reader-text);
+  --color-primary: var(--color-reader-focus);
+  --color-primary-foreground: var(--color-reader-background);
+  --color-secondary: color-mix(
+    in srgb,
+    var(--color-reader-text) 8%,
+    var(--color-reader-background)
+  );
+  --color-secondary-foreground: var(--color-reader-text);
+  --color-muted: color-mix(in srgb, var(--color-reader-text) 12%, var(--color-reader-background));
+  --color-muted-foreground: color-mix(in srgb, var(--color-reader-text) 58%, transparent);
+  --color-accent: var(--color-reader-focus);
+  --color-accent-foreground: var(--color-reader-background);
+  --color-border: color-mix(in srgb, var(--color-reader-text) 18%, transparent);
+  --color-input: color-mix(in srgb, var(--color-reader-text) 18%, transparent);
+  --color-ring: var(--color-reader-focus);
 }
 
-.orp-letter {
-  color: var(--color-reader-focus);
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: baseline;
+  width: min(100%, 68rem);
+  margin-inline: auto;
+  font-family: var(--font-serif);
+  font-size: clamp(2.75rem, 7vw, 6.25rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variant-ligatures: none;
+  color: var(--color-reader-text);
+}
+
+.stage-side {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--color-reader-text) 88%, transparent);
+}
+
+.stage-before {
+  text-align: right;
+}
+
+.stage-after {
+  text-align: left;
+}
+
+.stage-pivot {
   font-weight: 600;
 }
 
-.aperture {
-  position: relative;
+.stage[data-mark='true'] .stage-pivot {
+  color: var(--color-reader-focus);
 }
 
-.aperture::before {
-  content: "";
-  position: absolute;
-  top: -18%;
-  bottom: -18%;
-  left: 50%;
-  width: 1px;
-  background: var(--color-reader-focus);
-  transform: translateX(-50%);
-  pointer-events: none;
+.context-line,
+.guide-line {
+  max-width: 38rem;
+  margin-inline: auto;
+  font-family: var(--font-serif);
+  line-height: 1.6;
+}
+
+.context-line {
+  margin-top: 2.75rem;
+  font-size: 1.125rem;
+  color: color-mix(in srgb, var(--color-reader-text) 68%, transparent);
+}
+
+.guide-line {
+  font-size: clamp(1.5rem, 2.8vw, 2.05rem);
+  color: color-mix(in srgb, var(--color-reader-text) 72%, transparent);
+}
+
+.guide-now {
+  color: var(--color-reader-text);
+  background-image: linear-gradient(var(--color-reader-focus), var(--color-reader-focus));
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: 0 calc(100% - 0.08em);
+}
+
+.context-line .guide-now {
+  color: var(--color-reader-focus);
+  background-image: none;
 }
 
 .filament {
-  height: 1px;
+  height: 2px;
   background: var(--color-border);
   overflow: hidden;
 }
@@ -156,12 +224,12 @@
   color: var(--color-muted-foreground);
 }
 
-.rail-link[aria-current="page"] {
+.rail-link[aria-current='page'] {
   color: var(--color-foreground);
 }
 
-.rail-link[aria-current="page"]::before {
-  content: "";
+.rail-link[aria-current='page']::before {
+  content: '';
   position: absolute;
   left: 0;
   top: 20%;

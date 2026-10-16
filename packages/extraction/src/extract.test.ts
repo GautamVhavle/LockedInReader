@@ -22,13 +22,25 @@ describe('web extraction', () => {
     expect(document.source.url).toBe('https://example.com/essay');
   });
 
-  it('uses selection fallback', () => {
+  it('reads a selection instead of the page around it', () => {
     const document = extractWebDocument({
       html: ARTICLE,
       url: 'https://example.com/essay',
       selection: 'Just this sentence.',
     });
-    expect(document.blocks.map((block) => block.text).join(' ')).toContain('Just this sentence');
+    expect(document.blocks.map((block) => block.text).join(' ')).toBe('Just this sentence.');
+    expect(document.source.kind).toBe('web');
+    expect(document.metadata.wordCount).toBe(3);
+  });
+
+  it('finds no readable words on a page that is only chrome', () => {
+    const document = extractWebDocument({
+      html: '<html><body><nav>Home About Login</nav><footer>subscribe now</footer></body></html>',
+      url: 'https://example.com',
+      title: 'Empty',
+    });
+    expect(document.blocks.some((block) => block.text.trim())).toBe(false);
+    expect(document.metadata.wordCount).toBe(0);
   });
 
   it('uses the GitHub adapter', () => {

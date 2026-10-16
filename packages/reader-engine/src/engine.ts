@@ -1,5 +1,5 @@
 import type { CanonicalDocument, ReaderPosition, ReadingMode } from '@locked-in/types';
-import { chunkDelayMs, tokenDelayMs, type TimingConfig } from './timing.js';
+import { chunkDelayMs, clampWpm, tokenDelayMs, WPM_DEFAULT, type TimingConfig } from './timing.js';
 import { tokenizeDocument, type ReaderToken } from './tokenize.js';
 
 export interface ReaderFrame {
@@ -17,6 +17,7 @@ export interface ReaderState {
   chunkSize: number;
   index: number;
   playing: boolean;
+  finished: boolean;
   tokenCount: number;
 }
 
@@ -35,10 +36,11 @@ export class ReaderEngine {
   private tokens: ReaderToken[] = [];
   private index = 0;
   private playing = false;
+  private finished = false;
   private timer: unknown;
   private readonly listeners = new Set<(frame: ReaderFrame) => void>();
   private config: TimingConfig = {
-    wpm: 350,
+    wpm: WPM_DEFAULT,
     mode: 'orp',
     chunkSize: 1,
     punctuationPauseMs: 80,
@@ -53,6 +55,7 @@ export class ReaderEngine {
     this.document = document;
     this.tokens = tokenizeDocument(document);
     this.index = 0;
+    this.finished = false;
     this.emit();
   }
 
@@ -62,7 +65,11 @@ export class ReaderEngine {
   }
 
   play(): void {
-    if (!this.tokens.length) return;
+    if (!this.tokens.length || this.playing) return;
+    if (this.finished) {
+      this.index = 0;
+      this.finished = false;
+    }
     this.playing = true;
     this.tick();
   }
@@ -75,8 +82,36 @@ export class ReaderEngine {
   }
 
   seek(wordIndex: number): void {
+    this.finished = false;
     this.index = Math.max(0, Math.min(wordIndex, Math.max(0, this.tokens.length - 1)));
     this.emit();
+  }
+
+  jumpSentence(direction: -1 | 1): void {
+    const { start, end } = this.sentenceRange(this.index);
+    if (direction < 0) {
+      if (this.index > start) this.seek(start);
+      else if (start > 0) this.seek(this.sentenceRange(start - 1).start);
+      return;
+    }
+    if (end + 1 < this.tokens.length) this.seek(end + 1);
+  }
+
+  currentSentence(): ReaderToken[] {
+    const { start, end } = this.sentenceRange(this.index);
+    if (end < start) return [];
+    return this.tokens.slice(start, end + 1);
+  }
+
+  private sentenceRange(index: number): { start: number; end: number } {
+    const token = this.tokens[index];
+    if (!token) return { start: 0, end: -1 };
+    const id = token.sentenceIndex;
+    let start = index;
+    let end = index;
+    while (start > 0 && this.tokens[start - 1]?.sentenceIndex === id) start -= 1;
+    while (end + 1 < this.tokens.length && this.tokens[end + 1]?.sentenceIndex === id) end += 1;
+    return { start, end };
   }
 
   next(): void {
@@ -93,7 +128,8 @@ export class ReaderEngine {
   }
 
   setSpeed(wpm: number): void {
-    this.config = { ...this.config, wpm };
+    if (!Number.isFinite(wpm)) return;
+    this.config = { ...this.config, wpm: clampWpm(wpm) };
     this.emit();
   }
 
@@ -113,6 +149,7 @@ export class ReaderEngine {
       chunkSize: this.config.chunkSize,
       index: this.index,
       playing: this.playing,
+      finished: this.finished,
       tokenCount: this.tokens.length,
     };
   }
@@ -158,9 +195,10 @@ export class ReaderEngine {
   }
 
   private currentDelay(tokens: ReaderToken[]): number {
-    if (this.config.mode === 'chunk') return chunkDelayMs(tokens, this.config);
+    const following = this.tokens[this.index + tokens.length];
+    if (this.config.mode === 'chunk') return chunkDelayMs(tokens, this.config, following);
     const token = tokens[0];
-    return token ? tokenDelayMs(token, this.config) : 0;
+    return token ? tokenDelayMs(token, this.config, following) : 0;
   }
 
   private tick(): void {
@@ -169,13 +207,16 @@ export class ReaderEngine {
     const tokens = this.currentTokens();
     const delay = this.currentDelay(tokens);
     this.timer = this.clock.setTimeout(() => {
-      if (this.index + this.step() >= this.tokens.length) {
+      if (!this.playing) return;
+      const next = this.index + this.step();
+      if (next >= this.tokens.length) {
         this.playing = false;
-        this.index = Math.max(0, this.tokens.length - 1);
+        this.finished = true;
+        this.timer = undefined;
         this.emit();
         return;
       }
-      this.index += this.step();
+      this.index = next;
       this.tick();
     }, delay);
   }

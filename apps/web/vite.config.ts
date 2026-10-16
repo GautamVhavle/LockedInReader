@@ -14,8 +14,8 @@ export default defineConfig({
         name: 'Locked In Reader',
         short_name: 'Locked In',
         description: 'Read faster. Listen anywhere. Remember everything. Own your knowledge.',
-        theme_color: '#1b2740',
-        background_color: '#f4f0e6',
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
         start_url: '/',
         icons: [

@@ -15,8 +15,12 @@ export function SearchPage() {
   const hits = search.search(query);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
-      <h1 className="font-serif text-4xl tracking-tight">Search</h1>
+    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10">
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Recall</p>
+      <h1 className="mt-2 font-serif text-4xl tracking-tight">Search</h1>
+      <p className="mt-3 max-w-lg text-sm text-muted-foreground">
+        Look through titles, sentences, and marks already on this device.
+      </p>
       <input
         autoFocus
         placeholder="A title, a sentence, a mark"

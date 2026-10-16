@@ -4,6 +4,8 @@ export function DocumentCard({
   excerpt,
   progress,
   words,
+  featured,
+  showKind = true,
   onClick,
 }: {
   title: string;
@@ -11,27 +13,43 @@ export function DocumentCard({
   excerpt: string;
   progress?: number;
   words?: number;
+  featured?: boolean;
+  showKind?: boolean;
   onClick?: () => void;
 }) {
+  const preview = excerpt.trim() || 'No preview yet';
+  const read =
+    progress !== undefined ? Math.round(Math.min(100, Math.max(0, progress))) : undefined;
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group grid w-full grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] items-baseline gap-4 border-b border-border py-4 text-left last:border-b-0"
+      title={title}
+      className={`group flex h-full min-h-36 w-full cursor-pointer flex-col rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-accent ${
+        featured ? 'sm:min-h-44' : ''
+      }`}
     >
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{kind}</span>
-      <span className="min-w-0">
-        <span className="block font-serif text-[1.35rem] leading-snug tracking-tight group-hover:text-accent">
-          {title}
+      {showKind ? (
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          {kind}
         </span>
-        <span className="mt-1 block truncate text-sm text-muted-foreground">{excerpt}</span>
+      ) : null}
+      <span
+        className={`${showKind ? 'mt-3' : ''} block font-serif leading-snug tracking-tight group-hover:text-accent ${featured ? 'text-3xl' : 'line-clamp-2 text-xl'}`}
+      >
+        {title || 'Untitled'}
       </span>
-      <span className="flex flex-col items-end gap-1">
+      <span
+        className={`mt-2 block text-sm text-muted-foreground ${featured ? 'line-clamp-3' : 'line-clamp-2'}`}
+      >
+        {preview}
+      </span>
+      <span className="mt-auto flex items-center gap-3 pt-5">
         <span className="filament w-full">
-          <span style={{ width: `${Math.min(100, progress ?? 0)}%` }} />
+          <span style={{ width: `${read ?? 0}%` }} />
         </span>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {progress !== undefined ? `${Math.round(progress)}%` : words ? `${words.toLocaleString()}w` : ''}
+        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+          {read !== undefined ? `${read}%` : words ? `${words.toLocaleString()} words` : 'New'}
         </span>
       </span>
     </button>

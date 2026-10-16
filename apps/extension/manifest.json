@@ -4,8 +4,7 @@
   "version": "0.1.0",
   "description": "Capture pages into your local-first reading OS.",
   "action": {
-    "default_title": "Locked In",
-    "default_popup": "popup.html"
+    "default_title": "Read this page in Locked In"
   },
   "side_panel": {
     "default_path": "sidepanel.html"

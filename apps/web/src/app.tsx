@@ -5,6 +5,7 @@ import { Shell } from './components/shell.js';
 import { LibraryProvider } from './lib/library-state.js';
 import { AskPage } from './pages/ask.js';
 import { HomePage } from './pages/home.js';
+import { LandingPage } from './pages/landing.js';
 import { LibraryPage } from './pages/library.js';
 import { NotesPage } from './pages/notes.js';
 import { ReaderPage } from './pages/reader.js';
@@ -17,8 +18,9 @@ export function App() {
     <ThemedApp>
       <LibraryProvider>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route element={<Shell />}>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/desk" element={<HomePage />} />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/ask" element={<AskPage />} />

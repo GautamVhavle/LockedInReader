@@ -22,7 +22,8 @@ export function CommandPalette() {
 
   const items = useMemo(() => {
     const staticItems = [
-      { id: 'home', label: 'Desk', run: () => navigate('/') },
+      { id: 'home', label: 'Desk', run: () => navigate('/desk') },
+      { id: 'landing', label: 'Landing', run: () => navigate('/') },
       { id: 'library', label: 'Library', run: () => navigate('/library') },
       { id: 'search', label: 'Search', run: () => navigate('/search') },
       { id: 'ask', label: 'Ask the library', run: () => navigate('/ask') },

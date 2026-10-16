@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@locked-in/extraction": "workspace:*",
+    "@locked-in/reader-engine": "workspace:*",
+    "@locked-in/types": "workspace:*",
     "@locked-in/ui": "workspace:*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

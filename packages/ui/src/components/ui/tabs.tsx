@@ -16,7 +16,7 @@ export function TabsTrigger({ className, ...props }: TabsPrimitive.TabsTriggerPr
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'rounded-md px-3 py-1.5 text-sm text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground',
+        'rounded-md px-3 py-1.5 text-sm text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground',
         className,
       )}
       {...props}

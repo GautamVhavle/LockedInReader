@@ -35,6 +35,12 @@ importers:
       '@locked-in/extraction':
         specifier: workspace:*
         version: link:../../packages/extraction
+      '@locked-in/reader-engine':
+        specifier: workspace:*
+        version: link:../../packages/reader-engine
+      '@locked-in/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@locked-in/ui':
         specifier: workspace:*
         version: link:../../packages/ui

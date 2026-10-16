@@ -15,6 +15,7 @@ coverage
 apps/extension/dist
 apps/web/dev-dist
 .output
+.vercel
 test-results
 playwright-report
 .idea

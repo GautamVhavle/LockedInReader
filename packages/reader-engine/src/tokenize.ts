@@ -12,18 +12,41 @@ export interface ReaderToken {
   blockType: BlockType;
   blockOffset: number;
   wordIndex: number;
+  sentenceIndex: number;
   kind: TokenKind;
   isParagraphStart: boolean;
+  isSentenceEnd: boolean;
   isRtl: boolean;
 }
 
+function isPunctChar(char: string): boolean {
+  return /\p{P}/u.test(char);
+}
+
+/** Index of the eye-anchor letter. Edge punctuation does not shift it. */
 export function orpIndex(word: string): number {
-  const len = [...word].length;
-  if (len <= 1) return 0;
-  if (len <= 5) return 1;
-  if (len <= 9) return 2;
-  if (len <= 13) return 3;
-  return 4;
+  const chars = [...word];
+  let start = 0;
+  let end = chars.length;
+  while (start < end && isPunctChar(chars[start] ?? '')) start += 1;
+  while (end > start && isPunctChar(chars[end - 1] ?? '')) end -= 1;
+  const core = end - start;
+  if (core <= 0) return 0;
+  const local = core <= 1 ? 0 : core <= 5 ? 1 : core <= 9 ? 2 : core <= 13 ? 3 : 4;
+  return start + Math.min(local, core - 1);
+}
+
+export function endsSentence(text: string): boolean {
+  const bare = text.replace(/^["'“‘(\[]+|["'”’)\]]+$/gu, '');
+  if (!bare) return false;
+  if (/^(mr|mrs|ms|dr|prof|sr|jr|vs|etc|eg|ie|st|fig|al)\.$/i.test(bare)) return false;
+  // shortcut: dotted initialisms such as U.S. never end a sentence, even when the next word starts one
+  if (/^(?:[A-Za-z]\.)+$/.test(bare)) return false;
+  return /[.!?…。！？]$/.test(bare);
+}
+
+function isSkippable(text: string): boolean {
+  return /^https?:\/\/\S+$/i.test(text) || /^www\.\S+$/i.test(text) || /^\[\d{1,3}\]$/.test(text);
 }
 
 function classify(text: string, isCode: boolean): TokenKind {
@@ -37,10 +60,13 @@ function classify(text: string, isCode: boolean): TokenKind {
 function splitText(text: string, isCode: boolean): Array<{ text: string; offset: number }> {
   if (!text) return [];
   if (isCode) {
-    return text.split(/\s+/).filter(Boolean).map((part, i, all) => ({
-      text: part,
-      offset: all.slice(0, i).reduce((sum, item) => sum + item.length + 1, 0),
-    }));
+    return text
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part, i, all) => ({
+        text: part,
+        offset: all.slice(0, i).reduce((sum, item) => sum + item.length + 1, 0),
+      }));
   }
   const parts: Array<{ text: string; offset: number }> = [];
   const re = CJK_RE.test(text)
@@ -56,11 +82,16 @@ function splitText(text: string, isCode: boolean): Array<{ text: string; offset:
 export function tokenizeDocument(document: CanonicalDocument): ReaderToken[] {
   const tokens: ReaderToken[] = [];
   let wordIndex = 0;
+  let sentenceIndex = 0;
   for (const block of document.blocks) {
     if (block.type === 'divider' || block.type === 'image') continue;
     const isCode = block.type === 'code';
-    const parts = splitText(block.text, isCode);
+    const parts = splitText(block.text, isCode).filter((part) => isCode || !isSkippable(part.text));
+    if (parts.length === 0) continue;
+    const previous = tokens[tokens.length - 1];
+    if (previous && !previous.isSentenceEnd) sentenceIndex += 1;
     parts.forEach((part, index) => {
+      const end = endsSentence(part.text);
       tokens.push({
         text: part.text,
         orpIndex: orpIndex(part.text),
@@ -68,10 +99,13 @@ export function tokenizeDocument(document: CanonicalDocument): ReaderToken[] {
         blockType: block.type,
         blockOffset: part.offset,
         wordIndex: wordIndex++,
+        sentenceIndex,
         kind: classify(part.text, isCode),
         isParagraphStart: index === 0 && (block.type === 'paragraph' || block.type === 'heading'),
+        isSentenceEnd: end,
         isRtl: RTL_RE.test(part.text),
       });
+      if (end) sentenceIndex += 1;
     });
   }
   return tokens;

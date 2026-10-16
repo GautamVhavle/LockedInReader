@@ -52,7 +52,12 @@ export function ReaderPage() {
   const [tocOpen, setTocOpen] = useState(false);
   const [fontSize, setFontSize] = useState(settings.fontSizePx);
   const [noteDraft, setNoteDraft] = useState<string>();
-  const [selection, setSelection] = useState<{ text: string; blockId: string; start: number; end: number }>();
+  const [selection, setSelection] = useState<{
+    text: string;
+    blockId: string;
+    start: number;
+    end: number;
+  }>();
   const tts = useMemo(() => new BrowserTTSProvider(), []);
   const related = useMemo(
     () => highlights.filter((item) => item.documentId === id),
@@ -95,7 +100,7 @@ export function ReaderPage() {
     return (
       <div className="p-10">
         <p className="text-muted-foreground">That document is not on this device.</p>
-        <Link to="/" className="mt-4 inline-block text-sm underline">
+        <Link to="/desk" className="mt-4 inline-block text-sm underline">
           Back to desk
         </Link>
       </div>
@@ -121,7 +126,11 @@ export function ReaderPage() {
       workspace,
       current.id,
       { documentId: current.id, blockId: block.id, offset: selection.start },
-      progressPercent(current, { documentId: current.id, blockId: block.id, offset: selection.start }),
+      progressPercent(current, {
+        documentId: current.id,
+        blockId: block.id,
+        offset: selection.start,
+      }),
       'normal',
     );
     setSelection(undefined);
@@ -179,11 +188,14 @@ export function ReaderPage() {
   return (
     <div className="reader-surface min-h-screen">
       {!focus ? (
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-black/10 bg-[var(--color-reader-background)]/90 px-5 py-3 backdrop-blur">
-          <Link to="/" className="font-mono text-[10px] uppercase tracking-[0.2em] text-black/50">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-[var(--color-reader-background)]/90 px-5 py-3 backdrop-blur">
+          <Link
+            to="/desk"
+            className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
+          >
             Desk
           </Link>
-          <div className="flex flex-wrap items-center justify-end gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-black/70">
+          <div className="flex flex-wrap items-center justify-end gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground">
             <button type="button" onClick={() => setTocOpen((value) => !value)}>
               Contents
             </button>
@@ -207,12 +219,16 @@ export function ReaderPage() {
       ) : null}
 
       {tocOpen ? (
-        <nav className="border-b border-black/10 px-6 py-4">
+        <nav className="border-b border-border px-6 py-4">
           {headings.length === 0 ? (
-            <p className="text-sm text-black/50">No headings in this document.</p>
+            <p className="text-sm text-muted-foreground">No headings in this document.</p>
           ) : (
             headings.map((entry) => (
-              <a key={entry.id} href={`#${entry.blockId ?? entry.id}`} className="block py-1 text-sm text-black/70">
+              <a
+                key={entry.id}
+                href={`#${entry.blockId ?? entry.id}`}
+                className="block py-1 text-sm text-foreground/80"
+              >
                 {entry.title}
               </a>
             ))
@@ -220,25 +236,38 @@ export function ReaderPage() {
         </nav>
       ) : null}
 
-      <article className="mx-auto max-w-[42rem] px-6 py-16" style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-black/45">
-          {current.source.kind} · {current.metadata.wordCount.toLocaleString()} words · {minutes} min
+      <article
+        className="mx-auto max-w-[42rem] px-6 py-16"
+        style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
+      >
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+          {current.source.kind} · {current.metadata.wordCount.toLocaleString()} words · {minutes}{' '}
+          min
         </p>
-        <h1 className="mt-4 font-serif text-[2.4rem] leading-[1.12] tracking-tight">{current.metadata.title}</h1>
+        <h1 className="mt-4 font-serif text-[2.4rem] leading-[1.12] tracking-tight">
+          {current.metadata.title}
+        </h1>
         <div className="mt-10 font-serif text-[1.05em]">
           {body.map((block) => {
             const marks = related.filter((item) => item.location.blockId === block.id);
             if (block.type === 'heading') {
               const Heading = (block.level && block.level <= 2 ? 'h2' : 'h3') as 'h2' | 'h3';
               return (
-                <Heading key={block.id} id={block.id} className="mb-4 mt-12 font-serif text-[1.45em] leading-tight">
+                <Heading
+                  key={block.id}
+                  id={block.id}
+                  className="mb-4 mt-12 font-serif text-[1.45em] leading-tight"
+                >
                   {block.text}
                 </Heading>
               );
             }
             if (block.type === 'code') {
               return (
-                <pre key={block.id} className="my-6 overflow-x-auto bg-black/5 p-4 font-mono text-[0.8em]">
+                <pre
+                  key={block.id}
+                  className="my-6 overflow-x-auto bg-muted p-4 font-mono text-[0.8em]"
+                >
                   {block.text}
                 </pre>
               );
@@ -255,7 +284,8 @@ export function ReaderPage() {
                 </blockquote>
               );
             }
-            if (block.type === 'divider') return <hr key={block.id} className="my-10 border-black/10" />;
+            if (block.type === 'divider')
+              return <hr key={block.id} className="my-10 border-border" />;
             if (block.type === 'list-item') {
               return (
                 <li
@@ -269,7 +299,12 @@ export function ReaderPage() {
               );
             }
             return (
-              <p key={block.id} id={block.id} className="mb-[0.9em]" onMouseUp={() => onSelect(block.id, block.text)}>
+              <p
+                key={block.id}
+                id={block.id}
+                className="mb-[0.9em]"
+                onMouseUp={() => onSelect(block.id, block.text)}
+              >
                 {renderText(block.text, marks)}
               </p>
             );
@@ -281,13 +316,25 @@ export function ReaderPage() {
         <div className="fixed bottom-6 left-1/2 z-20 w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 border border-border bg-background p-3 text-foreground shadow-lg">
           <p className="mb-2 line-clamp-2 text-sm text-muted-foreground">“{selection.text}”</p>
           <div className="flex gap-2">
-            <button type="button" className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em]" onClick={() => void persistHighlight()}>
+            <button
+              type="button"
+              className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em]"
+              onClick={() => void persistHighlight()}
+            >
               Mark
             </button>
-            <button type="button" className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em]" onClick={() => void persistNote()}>
+            <button
+              type="button"
+              className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em]"
+              onClick={() => void persistNote()}
+            >
               Save note
             </button>
-            <button type="button" className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground" onClick={() => setSelection(undefined)}>
+            <button
+              type="button"
+              className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground"
+              onClick={() => setSelection(undefined)}
+            >
               Dismiss
             </button>
           </div>
@@ -303,7 +350,7 @@ export function ReaderPage() {
       {focus ? (
         <button
           type="button"
-          className="fixed right-4 top-4 font-mono text-[10px] uppercase tracking-[0.16em] text-black/40"
+          className="fixed right-4 top-4 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground"
           onClick={() => setFocus(false)}
         >
           Esc
