@@ -29,6 +29,7 @@ export const AppSettingsSchema = z.object({
   hasLocalAiKey: z.boolean().default(false),
   ttsVoice: z.string().optional(),
   ttsRate: z.number().min(0.5).max(3).default(1),
+  ttsPitch: z.number().min(0.5).max(2).default(1),
   reducedMotion: z.boolean().default(false),
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;

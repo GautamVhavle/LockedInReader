@@ -11,6 +11,7 @@ import {
 export interface TTSUtterance {
   text: string;
   rate: number;
+  pitch?: number;
   voice?: string;
 }
 
@@ -145,6 +146,12 @@ export class BrowserTTSProvider implements TTSProvider {
       }
       this.utterance = new SpeechSynthesisUtterance(utterance.text);
       this.utterance.rate = utterance.rate;
+      if (utterance.pitch !== undefined) this.utterance.pitch = utterance.pitch;
+      if (utterance.voice) {
+        // shortcut: voices that share a name collapse to the first match, upgrade when a voice URI is stored
+        const match = speechSynthesis.getVoices().find((item) => item.name === utterance.voice);
+        if (match) this.utterance.voice = match;
+      }
       this.utterance.onend = () => resolve();
       this.utterance.onerror = () => reject(new Error(this.halted ? 'stopped' : 'Speech failed'));
       speechSynthesis.speak(this.utterance);

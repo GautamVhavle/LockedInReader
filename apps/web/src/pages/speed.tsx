@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { progressPercent } from '@locked-in/core';
 import { saveProgress } from '@locked-in/library';
 import {
@@ -18,7 +19,6 @@ import {
   EmptyState,
   Label,
   Progress,
-  Separator,
   Skeleton,
   Slider,
   Switch,
@@ -99,6 +99,8 @@ export function SpeedPage() {
   const { id } = useParams();
   const { documents, settings, progress, ready, refresh } = useLibrary();
   const navigate = useNavigate();
+  const [search] = useSearchParams();
+  const requested = search.get('mode');
   const engine = useMemo(() => new ReaderEngine(), []);
   const loadedId = useRef<string | undefined>(undefined);
   const [frame, setFrame] = useState(engine.currentFrame());
@@ -121,13 +123,30 @@ export function SpeedPage() {
     const saved = progress.find((item) => item.documentId === document.id);
     if (saved?.position.wordIndex !== undefined) engine.seek(saved.position.wordIndex);
     const savedMode = saved?.lastMode;
-    if (savedMode && savedMode !== 'normal') setMode(savedMode);
+    const fromQuery =
+      requested === 'orp' || requested === 'rsvp' || requested === 'chunk' || requested === 'guided'
+        ? requested
+        : undefined;
+    if (fromQuery) setMode(fromQuery);
+    else if (savedMode && savedMode !== 'normal') setMode(savedMode);
     setWpm(clampWpm(settings.wpm));
     setChunk(settings.chunkSize);
     loadedId.current = document.id;
     setFrame(engine.currentFrame());
     setBooted(true);
-  }, [document, engine, progress, ready, settings.chunkSize, settings.wpm]);
+  }, [document, engine, progress, ready, requested, settings.chunkSize, settings.wpm]);
+
+  useEffect(() => {
+    if (!id || loadedId.current !== id) return;
+    if (
+      requested === 'orp' ||
+      requested === 'rsvp' ||
+      requested === 'chunk' ||
+      requested === 'guided'
+    ) {
+      setMode(requested);
+    }
+  }, [id, requested]);
 
   useEffect(() => {
     engine.setMode(mode);
@@ -174,10 +193,15 @@ export function SpeedPage() {
     function onKey(event: KeyboardEvent) {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      if (target.closest('input, textarea, select, [contenteditable="true"], [role="slider"]'))
+      if (
+        target.closest(
+          'input, textarea, select, [contenteditable="true"], [role="slider"], button, a, [role="tab"], [role="switch"]',
+        )
+      ) {
+        if (event.key === 'Escape') navigate(`/read/${id}`);
         return;
+      }
       if (event.code === 'Space') {
-        if (target.closest('button, a, [role="tab"], [role="switch"]')) return;
         event.preventDefault();
         if (engine.getState().playing) {
           engine.pause();
@@ -292,7 +316,7 @@ export function SpeedPage() {
         </header>
         <Progress value={readPercent} className="h-px rounded-none" aria-label="Reading progress" />
 
-        <main className="flex flex-1 flex-col justify-center px-4 py-8 sm:px-8">
+        <main className="flex flex-1 flex-col justify-center px-4 pb-72 pt-8 sm:px-8">
           <p className="sr-only" aria-live={frame.playing ? 'off' : 'polite'}>
             {frame.tokens.map((token) => token.text).join(' ')}
           </p>
@@ -308,7 +332,9 @@ export function SpeedPage() {
           )}
         </main>
 
-        <footer className="mx-auto flex w-full max-w-xl flex-col gap-3 px-4 pb-8 sm:px-6">
+        <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-[var(--color-reader-background)] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <div className="pointer-events-none absolute inset-x-0 bottom-full h-12 bg-gradient-to-t from-[var(--color-reader-background)] from-30% to-transparent" />
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
           {state.tokenCount > 0 ? (
             <>
               <div className="flex items-center gap-3">
@@ -324,85 +350,108 @@ export function SpeedPage() {
                   {place + 1} / {state.tokenCount}
                 </span>
               </div>
-              <Separator />
-              <Tabs value={mode} onValueChange={(value) => chooseMode(value as ReadingMode)}>
-                <TabsList className="flex h-auto w-full flex-wrap justify-center">
-                  {modes.map((item) => (
-                    <TabsTrigger key={item.id} value={item.id} className={`${controlClass} flex-1`}>
-                      {item.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Tip label="Previous sentence · Up">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+                <p className="font-serif text-sm">
+                  {frame.playing ? 'Reading' : state.finished ? 'End' : 'Ready'}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Tip label="Previous sentence · Up">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-11 text-foreground"
+                      aria-label="Previous sentence"
+                      onClick={() => engine.jumpSentence(-1)}
+                    >
+                      <SkipBack className="h-5 w-5" />
+                    </Button>
+                  </Tip>
                   <Button
                     type="button"
-                    variant="ghost"
-                    className={`${controlClass} text-muted-foreground`}
-                    aria-label="Previous sentence"
-                    onClick={() => engine.jumpSentence(-1)}
+                    className="h-14 w-14 rounded-full"
+                    aria-pressed={frame.playing}
+                    aria-label={frame.playing ? 'Pause' : state.finished ? 'Replay' : 'Play'}
+                    onClick={() => {
+                      if (frame.playing) {
+                        engine.pause();
+                        persist();
+                      } else engine.play();
+                    }}
                   >
-                    Prev
+                    {frame.playing ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
                   </Button>
-                </Tip>
-                <Button
-                  type="button"
-                  className={`${controlClass} min-w-24`}
-                  aria-pressed={frame.playing}
-                  onClick={() => {
-                    if (frame.playing) {
-                      engine.pause();
-                      persist();
-                    } else engine.play();
-                  }}
-                >
-                  {frame.playing ? 'Pause' : state.finished ? 'Replay' : 'Play'}
-                </Button>
-                <Tip label="Next sentence · Down">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className={`${controlClass} text-muted-foreground`}
-                    aria-label="Next sentence"
-                    onClick={() => engine.jumpSentence(1)}
-                  >
-                    Next
-                  </Button>
-                </Tip>
+                  <Tip label="Next sentence · Down">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-11 text-foreground"
+                      aria-label="Next sentence"
+                      onClick={() => engine.jumpSentence(1)}
+                    >
+                      <SkipForward className="h-5 w-5" />
+                    </Button>
+                  </Tip>
+                </div>
+                <p className="text-right font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground tabular-nums">
+                  {wpm} wpm
+                </p>
               </div>
-              <div className="flex items-center justify-center gap-2">
+              <div className="grid grid-cols-5" role="toolbar" aria-label="Reading mode">
+                <Link
+                  to={`/read/${current.id}`}
+                  className="inline-flex h-11 items-center justify-center border-b-2 border-transparent font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+                >
+                  Page
+                </Link>
+                <Tabs
+                  value={mode}
+                  onValueChange={(value) => chooseMode(value as ReadingMode)}
+                  className="col-span-4"
+                >
+                  <TabsList className="grid h-11 w-full grid-cols-4 gap-0 rounded-none bg-transparent p-0">
+                    {modes.map((item) => (
+                      <TabsTrigger
+                        key={item.id}
+                        value={item.id}
+                        title={item.hint}
+                        className="h-11 rounded-none border-b-2 border-transparent bg-transparent px-1 font-mono text-[10px] uppercase tracking-[0.14em] shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                      >
+                        {item.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
+              <p className="text-center font-serif text-sm text-muted-foreground">{modeHint}</p>
+              <div className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  className={controlClass}
+                  className="h-11 w-11 font-mono"
                   aria-label="Slower by 10 words per minute"
                   onClick={() => setWpm((value) => clampWpm(value - 10))}
                 >
                   −10
                 </Button>
-                <Label className="w-24 text-center font-mono text-[11px] tabular-nums tracking-wide">
-                  {wpm} wpm
-                </Label>
+                <Slider
+                  value={[wpm]}
+                  min={WPM_MIN}
+                  max={WPM_MAX}
+                  step={10}
+                  aria-label="Words per minute"
+                  aria-valuetext={`${wpm} words per minute`}
+                  onValueChange={([value]) => value !== undefined && setWpm(clampWpm(value))}
+                />
                 <Button
                   type="button"
                   variant="outline"
-                  className={controlClass}
+                  className="h-11 w-11 font-mono"
                   aria-label="Faster by 10 words per minute"
                   onClick={() => setWpm((value) => clampWpm(value + 10))}
                 >
                   +10
                 </Button>
               </div>
-              <Slider
-                value={[wpm]}
-                min={WPM_MIN}
-                max={WPM_MAX}
-                step={10}
-                aria-label="Words per minute"
-                aria-valuetext={`${wpm} words per minute`}
-                onValueChange={([value]) => value !== undefined && setWpm(clampWpm(value))}
-              />
               {mode === 'chunk' ? (
                 <div
                   className="flex flex-wrap items-center justify-center gap-1"
@@ -446,10 +495,7 @@ export function SpeedPage() {
               ) : null}
             </>
           ) : null}
-          <p className="text-center font-serif text-sm text-muted-foreground">{modeHint}</p>
-          <p className="text-center font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-            Space play · arrows step · up down sentence · Esc page
-          </p>
+          </div>
         </footer>
       </div>
     </TooltipProvider>
